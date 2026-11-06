@@ -17,6 +17,8 @@ export type ReaderAnnotation = {
   color?: string;
   comment?: string;
   text?: string;
+  sortIndex?: string;
+  pageLabel?: string;
   position?: {
     pageIndex: number;
     rects?: number[][];
@@ -284,16 +286,24 @@ export function addReaderAnnotation(
   annotation: ReaderAnnotation,
   reader?: ReaderInstance | null,
 ): unknown {
-  const ir = getInternalReader(reader);
+  const active = reader ?? getActiveReader();
+  const ir = getInternalReader(active);
   if (!ir) {
     return null;
   }
   try {
+    // Content-side addAnnotation cannot read chrome-compartment nested
+    // objects (position.pageIndex → Xray denial). Clone into the reader iframe.
+    const win = active?._iframeWindow;
+    const payload =
+      win && !Components.utils.isDeadWrapper(win)
+        ? (Components.utils.cloneInto(annotation, win) as ReaderAnnotation)
+        : annotation;
     if (typeof ir.addAnnotation === "function") {
-      return ir.addAnnotation(annotation, true);
+      return ir.addAnnotation(payload, true);
     }
     if (typeof ir._annotationManager?.addAnnotation === "function") {
-      return ir._annotationManager.addAnnotation(annotation);
+      return ir._annotationManager.addAnnotation(payload);
     }
   } catch (e) {
     ztoolkit.log("addReaderAnnotation failed", e);
