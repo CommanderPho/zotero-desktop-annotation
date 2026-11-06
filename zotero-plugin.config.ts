@@ -43,6 +43,11 @@ export default defineConfig({
     waitForPlugin: `() => Zotero.${pkg.config.addonInstance}.data.initialized`,
   },
 
+  server: {
+    debugOutputFile: true,
+    debugOutputWindow: false,
+  },
+
   // If you need to see a more detailed log, uncomment the following line:
   // logLevel: "trace",
 });

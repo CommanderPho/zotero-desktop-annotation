@@ -42,12 +42,16 @@ Sticky-note markers on the PDF are scaled by **Note icon size percent** (default
 
 ## Development
 
+Requires `zotero-plugin-scaffold` `^0.9.3`.
+
 ```powershell
 cp .env.example .env   # if needed
 npm install
 npm start              # or .\dev.ps1
 npm run build
 ```
+
+With `npm start`, Scaffold writes Zotero `debug`/`dump` output under `.scaffold/logs/` (paths are printed in the serve console). Browser Console `console.*` / uncaught errors are separate and still need to be copied from DevTools.
 
 See [GOAL.md](./GOAL.md) for the product checklist.
 
