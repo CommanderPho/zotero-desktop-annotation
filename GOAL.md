@@ -1,10 +1,16 @@
 # Zotero Annotation Improvements - IMPORTANT
-Plugin aims to provide the following refinements to the Zotero annotaiton system on desktop platforms (Windows, macOS).
 
-The following features are required:
-	- hotkeys to switch to annotation tools: [t] for text annotation, [b] for box annotation, [f] for free-draw, etc.
-	- text annotation needs to remember the user-selected font size and color, and changing these needs to be much easier on the desktop. The slider for font sizing only goes down to a size that I personally find too big since you can zoom in infinitely.
-	- ![[Pasted image 20261106104825.png]]
-	- allow Copy/Paste with Ctrl+C/V for text annotations
-	- Why icon for annotation so huge? ![[Pasted image 20261106105534.png]]
+Plugin aims to provide the following refinements to the Zotero annotation system on desktop platforms (Windows, macOS).
 
+## Required features
+
+- [x] Hotkeys to switch annotation tools: `t` text, `b` box/area, `f` free-draw, plus `n` note, `u` underline, `i` highlight, `e` eraser
+- [x] Text annotation remembers user-selected font size and color; easier desktop controls (toolbar size input + swatches); sizes down to **4 pt**
+- [x] Copy/Paste with Ctrl/Cmd+C/V duplicates selected text annotations (does not intercept while typing inside a text box)
+- [x] Smaller on-PDF note annotation icons via `noteIconScalePercent` preference (default `50`; set `100` for stock size)
+
+## Prefs
+
+- `enableHotkeys`
+- `text.fontSize` / `text.color`
+- `noteIconScalePercent`

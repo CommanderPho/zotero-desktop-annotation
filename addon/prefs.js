@@ -1,2 +1,4 @@
-pref("enable", true);
-pref("input", "This is input");
+pref("enableHotkeys", true);
+pref("text.fontSize", 10);
+pref("text.color", "#000000");
+pref("noteIconScalePercent", 50);
