@@ -31,6 +31,9 @@ export type ReaderAnnotation = {
 export type InternalReader = {
   setTool?: (params: Record<string, unknown>) => void;
   toggleTool?: (type: string) => void;
+  /** Prefer over setTool({type}) from chrome — avoids Xray writes onto content tool objects. */
+  _updateState?: (state: Record<string, unknown>) => void;
+  setSelectedAnnotations?: (ids: string[]) => void;
   addAnnotation?: (annotation: ReaderAnnotation, select?: boolean) => unknown;
   _annotationManager?: {
     addAnnotation?: (annotation: ReaderAnnotation) => unknown;
@@ -169,12 +172,37 @@ export function applyTextStyleToTool(ir: InternalReader): void {
   }
 }
 
+/**
+ * Activate a tool and leave it on (unlike toggleTool, which turns it off if
+ * already active). Uses the reader's own `_tools[type]` object via `_updateState`
+ * so we never assign a chrome-compartment `{ type }` onto a content tool (that
+ * triggers "Security wrapper denied access to property type").
+ */
+function activateToolSticky(ir: InternalReader, type: AnnotationToolType): boolean {
+  const toolRef = ir._tools?.[type];
+  if (toolRef && typeof ir._updateState === "function") {
+    ir._updateState({ tool: toolRef });
+    ir.setSelectedAnnotations?.([]);
+    return true;
+  }
+  // Fallback: toggle on; if that toggled off an already-active tool, toggle again.
+  if (!ir.toggleTool) {
+    return false;
+  }
+  ir.toggleTool(type);
+  const current = ir._state?.tool?.type;
+  if (current !== type) {
+    ir.toggleTool(type);
+  }
+  return true;
+}
+
 export function setAnnotationTool(
   type: AnnotationToolType,
   options: { toggle?: boolean } = {},
 ): boolean {
   const ir = getInternalReader();
-  if (!ir?.setTool && !ir?.toggleTool) {
+  if (!ir?.setTool && !ir?.toggleTool && !ir?._updateState) {
     return false;
   }
 
@@ -186,25 +214,21 @@ export function setAnnotationTool(
     if (options.toggle && ir.toggleTool) {
       ir.toggleTool(type);
       if (type === "text" && ir._state?.tool?.type === "text") {
-        ir.setTool?.({
-          type: "text",
-          size: clampTextFontSize(Number(getPref("text.fontSize"))),
-          color: String(getPref("text.color") || "#000000"),
-        });
+        // Mutate the live content tool in place (same compartment refs).
+        applyTextStyleToTool(ir);
+        const textTool = ir._tools?.text;
+        if (textTool && ir._updateState) {
+          ir._updateState({ tool: textTool });
+        }
       }
       return true;
     }
 
+    // Sticky / explicit activate — do not use setTool({ type }) from chrome.
     if (type === "text") {
-      ir.setTool?.({
-        type: "text",
-        size: clampTextFontSize(Number(getPref("text.fontSize"))),
-        color: String(getPref("text.color") || "#000000"),
-      });
-    } else {
-      ir.setTool?.({ type });
+      applyTextStyleToTool(ir);
     }
-    return true;
+    return activateToolSticky(ir, type);
   } catch (e) {
     ztoolkit.log("setAnnotationTool failed", type, e);
     return false;
@@ -229,15 +253,11 @@ export function setTextStyle(style: {
   }
 
   applyTextStyleToTool(ir);
-  const size = clampTextFontSize(Number(getPref("text.fontSize")));
-  const color = String(getPref("text.color") || "#000000");
 
   try {
-    if (ir._state?.tool?.type === "text") {
-      ir.setTool?.({ type: "text", size, color });
-    } else if (ir._tools?.text) {
-      ir._tools.text.size = size;
-      ir._tools.text.color = color;
+    const textTool = ir._tools?.text;
+    if (ir._state?.tool?.type === "text" && textTool && ir._updateState) {
+      ir._updateState({ tool: textTool });
     }
     return true;
   } catch (e) {

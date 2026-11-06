@@ -18,7 +18,7 @@ When a reader tab is active and you are not typing in a field:
 | `f` | Free-draw (`ink`) |
 | `n` | Note |
 | `u` | Underline |
-| `i` | Highlight |
+| `h` | Highlight |
 | `e` | Eraser |
 
 Disable via **Preferences → Desktop Annotation → Enable annotation tool hotkeys**.

@@ -12,9 +12,12 @@ const TOOL_HOTKEYS: Record<string, AnnotationToolType> = {
   f: "ink",
   n: "note",
   u: "underline",
-  i: "highlight",
+  h: "highlight",
   e: "eraser",
 };
+
+/** Tools activated with a single press that stay on (setTool, not toggleTool). */
+const STICKY_TOOLS = new Set<AnnotationToolType>(["underline", "highlight"]);
 
 const attachedWindows = new WeakSet<Window>();
 /** Keys that activated the text tool and are still physically held down. */
@@ -57,7 +60,8 @@ function handleToolHotkey(event: KeyboardEvent): void {
 
   event.preventDefault();
   event.stopPropagation();
-  setAnnotationTool(tool, { toggle: true });
+  const sticky = STICKY_TOOLS.has(tool);
+  setAnnotationTool(tool, sticky ? {} : { toggle: true });
   if (tool === "text") {
     heldToolKeys.add(key);
   }
@@ -94,8 +98,25 @@ export function attachReaderHotkeys(win: Window): void {
 export function ensureReaderHotkeys(): void {
   const reader = getActiveReader();
   const iframeWin = reader?._iframeWindow;
-  if (iframeWin) {
-    attachReaderHotkeys(iframeWin);
+  if (!iframeWin) {
+    return;
+  }
+  attachReaderHotkeys(iframeWin);
+  // PDF.js lives in a nested iframe and owns `h` (hand). Capture there too.
+  try {
+    const frames = iframeWin.document?.querySelectorAll("iframe");
+    frames?.forEach((frame: Element) => {
+      try {
+        const cw = (frame as HTMLIFrameElement).contentWindow;
+        if (cw) {
+          attachReaderHotkeys(cw);
+        }
+      } catch {
+        // Cross-origin or not ready
+      }
+    });
+  } catch {
+    // Reader DOM not ready
   }
 }
 
