@@ -17,6 +17,8 @@ const TOOL_HOTKEYS: Record<string, AnnotationToolType> = {
 };
 
 const attachedWindows = new WeakSet<Window>();
+/** Keys that activated the text tool and are still physically held down. */
+const heldToolKeys = new Set<string>();
 
 function handleToolHotkey(event: KeyboardEvent): void {
   if (!getPref("enableHotkeys")) {
@@ -25,6 +27,17 @@ function handleToolHotkey(event: KeyboardEvent): void {
   if (event.altKey || event.ctrlKey || event.metaKey || event.shiftKey) {
     return;
   }
+
+  const key = event.key.toLowerCase();
+
+  // Swallow held text-tool key (including repeats into a new annotation editor)
+  // until the user releases it.
+  if (heldToolKeys.has(key)) {
+    event.preventDefault();
+    event.stopPropagation();
+    return;
+  }
+
   if (event.repeat) {
     return;
   }
@@ -32,7 +45,6 @@ function handleToolHotkey(event: KeyboardEvent): void {
     return;
   }
 
-  const key = event.key.toLowerCase();
   const tool = TOOL_HOTKEYS[key];
   if (!tool) {
     return;
@@ -46,12 +58,28 @@ function handleToolHotkey(event: KeyboardEvent): void {
   event.preventDefault();
   event.stopPropagation();
   setAnnotationTool(tool, { toggle: true });
+  if (tool === "text") {
+    heldToolKeys.add(key);
+  }
+}
+
+function handleToolHotkeyUp(event: KeyboardEvent): void {
+  if (event.altKey || event.ctrlKey || event.metaKey || event.shiftKey) {
+    return;
+  }
+  heldToolKeys.delete(event.key.toLowerCase());
 }
 
 export function registerHotkeys(): void {
   ztoolkit.Keyboard.register((ev) => {
     handleToolHotkey(ev);
   });
+  // Clear hold-gate if keyup lands on the main window instead of the reader iframe.
+  const mainWin = Zotero.getMainWindow();
+  if (mainWin && !attachedWindows.has(mainWin)) {
+    attachedWindows.add(mainWin);
+    mainWin.addEventListener("keyup", handleToolHotkeyUp, true);
+  }
 }
 
 export function attachReaderHotkeys(win: Window): void {
@@ -60,6 +88,7 @@ export function attachReaderHotkeys(win: Window): void {
   }
   attachedWindows.add(win);
   win.addEventListener("keydown", handleToolHotkey, true);
+  win.addEventListener("keyup", handleToolHotkeyUp, true);
 }
 
 export function ensureReaderHotkeys(): void {
