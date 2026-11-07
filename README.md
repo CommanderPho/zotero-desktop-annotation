@@ -1,9 +1,8 @@
 # Zotero Desktop Annotation
 
-Desktop refinements for Zotero 7 PDF reader annotations.
+Desktop-first refinements to Zotero 7+ PDF reader annotations interface.
 
 [![zotero target version](https://img.shields.io/badge/Zotero-7-green?style=flat-square&logo=zotero&logoColor=CC2936)](https://www.zotero.org)
-[![Using Zotero Plugin Template](https://img.shields.io/badge/Using-Zotero%20Plugin%20Template-blue?style=flat-square&logo=github)](https://github.com/windingwind/zotero-plugin-template)
 
 ## Install
 
