@@ -16,6 +16,14 @@ const TOOL_HOTKEYS: Record<string, AnnotationToolType> = {
   e: "eraser",
 };
 
+const TOOL_TO_HOTKEY: Partial<Record<AnnotationToolType, string>> = Object.fromEntries(
+  Object.entries(TOOL_HOTKEYS).map(([key, tool]) => [tool, key]),
+) as Partial<Record<AnnotationToolType, string>>;
+
+export function getHotkeyForTool(type: AnnotationToolType): string | undefined {
+  return TOOL_TO_HOTKEY[type];
+}
+
 /** Tools activated with a single press that stay on (setTool, not toggleTool). */
 const STICKY_TOOLS = new Set<AnnotationToolType>(["underline", "highlight"]);
 

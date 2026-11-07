@@ -1,6 +1,8 @@
 import { config } from "../../package.json";
 import { getPref } from "../utils/prefs";
+import { getHotkeyForTool } from "./hotkeys";
 import {
+  AnnotationToolType,
   clampTextFontSize,
   getInternalReader,
   setTextStyle,
@@ -8,6 +10,19 @@ import {
 } from "./readerBridge";
 
 const TOOLBAR_ID = `${config.addonRef}-text-style`;
+
+/** Stock reader toolbar buttons that have plugin single-key hotkeys. */
+const TOOL_BUTTONS: { selector: string; tool: AnnotationToolType }[] = [
+  { selector: ".toolbar-button.highlight", tool: "highlight" },
+  { selector: ".toolbar-button.underline", tool: "underline" },
+  { selector: ".toolbar-button.note", tool: "note" },
+  { selector: ".toolbar-button.text", tool: "text" },
+  { selector: ".toolbar-button.area", tool: "image" },
+  { selector: ".toolbar-button.ink", tool: "ink" },
+];
+
+const HOTKEY_TITLE_SUFFIX = /\s\(([TBFNUHE])\)$/i;
+const observedToolContainers = new WeakSet<Element>();
 
 const TEXT_COLORS = [
   "#000000",
@@ -143,6 +158,51 @@ function refreshFromPrefs(
   colorInput.value = normalizeColor(String(getPref("text.color") || "#000000"));
 }
 
+function stripHotkeyTitleSuffix(title: string): string {
+  return title.replace(HOTKEY_TITLE_SUFFIX, "");
+}
+
+function applyToolHotkeyTooltips(doc: Document): void {
+  const enabled = Boolean(getPref("enableHotkeys"));
+  for (const { selector, tool } of TOOL_BUTTONS) {
+    const key = getHotkeyForTool(tool);
+    if (!key) {
+      continue;
+    }
+    const buttons = doc.querySelectorAll(selector);
+    buttons.forEach((node: Element) => {
+      const button = node as HTMLElement;
+      const current = button.getAttribute("title") ?? button.title ?? "";
+      if (!current) {
+        return;
+      }
+      const base = stripHotkeyTitleSuffix(current);
+      const next = enabled ? `${base} (${key.toUpperCase()})` : base;
+      if (button.getAttribute("title") !== next) {
+        button.setAttribute("title", next);
+      }
+    });
+  }
+}
+
+function ensureToolHotkeyTooltipObserver(doc: Document): void {
+  const container =
+    doc.querySelector(".center.tools") ?? doc.querySelector(".toolbar");
+  if (!container || observedToolContainers.has(container)) {
+    return;
+  }
+  observedToolContainers.add(container);
+  const observer = new MutationObserver(() => {
+    applyToolHotkeyTooltips(doc);
+  });
+  observer.observe(container, {
+    attributes: true,
+    attributeFilter: ["title"],
+    childList: true,
+    subtree: true,
+  });
+}
+
 function onRenderToolbar(event: {
   reader?: unknown;
   doc: Document;
@@ -154,6 +214,9 @@ function onRenderToolbar(event: {
   }
   const toolbar = buildToolbar(event.doc);
   event.append(toolbar);
+
+  applyToolHotkeyTooltips(event.doc);
+  ensureToolHotkeyTooltipObserver(event.doc);
 
   // Keep prefs in sync if the stock slider changed the tool size/color.
   syncTextStyleFromReader(event.reader as never);
