@@ -5,6 +5,13 @@ Desktop refinements for Zotero 7 PDF reader annotations.
 [![zotero target version](https://img.shields.io/badge/Zotero-7-green?style=flat-square&logo=zotero&logoColor=CC2936)](https://www.zotero.org)
 [![Using Zotero Plugin Template](https://img.shields.io/badge/Using-Zotero%20Plugin%20Template-blue?style=flat-square&logo=github)](https://github.com/windingwind/zotero-plugin-template)
 
+## Install
+
+1. Download the latest `.xpi` from [Releases](https://github.com/CommanderPho/zotero-desktop-annotation/releases/latest).
+2. In Zotero, open **Tools → Plugins**, then drag the `.xpi` onto the Plugins window.
+
+Updates are delivered through the plugin’s `update.json` on the [`release` tag](https://github.com/CommanderPho/zotero-desktop-annotation/releases/tag/release). Plugin ID: `desktopannotation@commanderpho.github.io`.
+
 ## Features
 
 ### Tool hotkeys
