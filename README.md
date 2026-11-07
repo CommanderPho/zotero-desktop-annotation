@@ -35,6 +35,7 @@ With a text annotation selected (not while editing its contents):
 
 - `Ctrl/Cmd+C` copies the annotation
 - `Ctrl/Cmd+V` pastes a duplicate offset on the page
+- `Alt/Option+drag` duplicates in place (original stays; the dragged copy moves)
 
 ### Smaller note icons
 

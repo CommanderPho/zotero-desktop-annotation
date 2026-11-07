@@ -1,6 +1,7 @@
 import { ensureReaderHotkeys } from "./hotkeys";
 import { ensureNoteIconScale } from "./noteIconScale";
 import { ensureClipboardHandlers } from "./textAnnotationClipboard";
+import { ensureTextAnnotationAltDrag } from "./textAnnotationAltDrag";
 import { getActiveReader, waitForInternalReader } from "./readerBridge";
 
 let notifierID: string | null = null;
@@ -14,6 +15,7 @@ async function onReaderReady(): Promise<void> {
   ensureReaderHotkeys();
   ensureClipboardHandlers();
   await ensureNoteIconScale(reader);
+  await ensureTextAnnotationAltDrag(reader);
 }
 
 export function registerNotifier(): void {

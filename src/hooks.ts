@@ -17,6 +17,11 @@ import {
   unregisterNoteIconScale,
   ensureNoteIconScale,
 } from "./modules/noteIconScale";
+import {
+  registerTextAnnotationAltDrag,
+  unregisterTextAnnotationAltDrag,
+  ensureTextAnnotationAltDrag,
+} from "./modules/textAnnotationAltDrag";
 
 async function onStartup() {
   await Promise.all([
@@ -32,6 +37,7 @@ async function onStartup() {
   registerToolbarEnhancements();
   registerTextAnnotationClipboard();
   registerNoteIconScale();
+  registerTextAnnotationAltDrag();
 
   await Promise.all(
     Zotero.getMainWindows().map((win) => onMainWindowLoad(win)),
@@ -40,6 +46,7 @@ async function onStartup() {
   ensureReaderHotkeys();
   ensureClipboardHandlers();
   await ensureNoteIconScale();
+  await ensureTextAnnotationAltDrag();
 
   addon.data.initialized = true;
 }
@@ -62,6 +69,7 @@ async function onMainWindowUnload(_win: Window): Promise<void> {
 function onShutdown(): void {
   unregisterToolbarEnhancements();
   unregisterNoteIconScale();
+  unregisterTextAnnotationAltDrag();
   ztoolkit.unregisterAll();
   addon.data.alive = false;
   // @ts-expect-error - Plugin instance is not typed

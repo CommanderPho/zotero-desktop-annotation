@@ -1,4 +1,3 @@
-import { getPref } from "../utils/prefs";
 import {
   addReaderAnnotation,
   getActiveReader,
@@ -8,9 +7,13 @@ import {
   ReaderAnnotation,
   ReaderInstance,
 } from "./readerBridge";
+import {
+  buildDuplicatedTextAnnotation,
+  PASTE_OFFSET,
+  resolveTextAnnotationColor,
+} from "./textAnnotationDuplicate";
 
 const CLIPBOARD_MIME = "application/x-zotero-desktop-annotation+json";
-const PASTE_OFFSET = 12;
 
 type ClipboardPayload = {
   version: 1;
@@ -21,53 +24,12 @@ let memoryClipboard: ClipboardPayload | null = null;
 let lastPasteAt = 0;
 const attachedWindows = new WeakSet<Window>();
 
-function resolvePasteColor(source: ReaderAnnotation): string {
-  return (
-    (typeof source.color === "string" && source.color) ||
-    String(getPref("text.color") || "#000000")
-  );
-}
-
-function buildDuplicatedTextAnnotation(
-  source: ReaderAnnotation,
-): ReaderAnnotation | null {
-  const sourcePosition = source.position;
-  if (!sourcePosition) {
-    return null;
-  }
-  // Keep this a plain chrome-side data object. Do not call reader
-  // getAnnotationMeta(position) — content cannot read chrome pageIndex (Xray).
-  const position = offsetPosition(sourcePosition);
-
-  let sortIndex =
-    typeof source.sortIndex === "string" && source.sortIndex
-      ? source.sortIndex
-      : "";
-  if (!sortIndex) {
-    // Last-resort: page-based index so AnnotationManager accepts the create
-    const page = Number.isFinite(position.pageIndex) ? position.pageIndex : 0;
-    sortIndex = `${String(page).padStart(5, "0")}|000000|00000`;
-  }
-
-  const pageLabel =
-    typeof source.pageLabel === "string" ? source.pageLabel : "";
-
-  return {
-    type: "text",
-    color: resolvePasteColor(source),
-    comment: source.comment ?? source.text ?? "",
-    position,
-    sortIndex,
-    pageLabel,
-  };
-}
-
 function buildPayload(annotation: ReaderAnnotation): ClipboardPayload {
   return {
     version: 1,
     annotation: {
       type: annotation.type,
-      color: resolvePasteColor(annotation),
+      color: resolveTextAnnotationColor(annotation),
       comment: annotation.comment,
       text: annotation.text,
       sortIndex:
@@ -83,30 +45,6 @@ function buildPayload(annotation: ReaderAnnotation): ClipboardPayload {
         : undefined,
     },
   };
-}
-
-function offsetPosition(
-  position: NonNullable<ReaderAnnotation["position"]>,
-): NonNullable<ReaderAnnotation["position"]> {
-  const next = JSON.parse(JSON.stringify(position)) as NonNullable<
-    ReaderAnnotation["position"]
-  >;
-  if (next.rects) {
-    next.rects = next.rects.map((rect) => [
-      rect[0] + PASTE_OFFSET,
-      rect[1] - PASTE_OFFSET,
-      rect[2] + PASTE_OFFSET,
-      rect[3] - PASTE_OFFSET,
-    ]);
-  }
-  if (next.paths) {
-    next.paths = next.paths.map((path) =>
-      path.map((value, index) =>
-        index % 2 === 0 ? value + PASTE_OFFSET : value - PASTE_OFFSET,
-      ),
-    );
-  }
-  return next;
 }
 
 function getSelectedTextAnnotation(
@@ -185,7 +123,9 @@ function pasteTextAnnotation(
     return false;
   }
 
-  const annotation = buildDuplicatedTextAnnotation(payload.annotation);
+  const annotation = buildDuplicatedTextAnnotation(payload.annotation, {
+    offset: PASTE_OFFSET,
+  });
   if (!annotation) {
     return false;
   }
@@ -260,7 +200,10 @@ function onKeyDown(event: KeyboardEvent): void {
       event.stopPropagation();
       return;
     }
-    const annotation = buildDuplicatedTextAnnotation(memoryClipboard.annotation);
+    const annotation = buildDuplicatedTextAnnotation(
+      memoryClipboard.annotation,
+      { offset: PASTE_OFFSET },
+    );
     if (annotation && addReaderAnnotation(annotation, reader)) {
       lastPasteAt = Date.now();
       event.preventDefault();
