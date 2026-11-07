@@ -1,7 +1,7 @@
 {
   "name": "zotero-desktop-annotation",
   "type": "module",
-  "version": "0.0.1",
+  "version": "0.1.0",
   "description": "Desktop refinements for Zotero 7 PDF reader annotations: tool hotkeys, text style memory, copy/paste, and smaller note icons.",
   "config": {
     "addonName": "Zotero Desktop Annotation",
